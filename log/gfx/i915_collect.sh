@@ -34,7 +34,6 @@ printInfo "print mode set"
 dmesg | grep 'drm_mode_debug_printmodeline'
 dmesg | grep 'drm_client_modeset_probe'
 
-
 # HBR
 printInfo "print dp rates"
 dmesg | grep 'intel_dp_print_rates'
@@ -47,4 +46,8 @@ find  /sys/kernel/debug/ -name i915_dsc_fec_support | xargs cat
 # PSR
 printInfo "PSR Info"
 cat /sys/kernel/debug/dri/0/i915_edp_psr_status
+dmesg | grep -i 'psr'
 
+# HDMI
+printInfo "Parse cea_ext and HDMI"
+dmesg | grep -i 'drm_parse'

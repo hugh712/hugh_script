@@ -40,6 +40,10 @@ cat /var/lib/ubuntu_dist_channel
 printInfo "lspci"
 lspci -nnv
 
+#update_connector_routing
+printInfo "update_connector_routing"
+dmesg | grep 'update_connector_routing'
+
 # collect whole dmesg
 printInfo "Collect dmesg"
 dmesg > dmesg.log
