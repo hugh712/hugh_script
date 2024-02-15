@@ -37,6 +37,8 @@ dmesg | grep 'drm_client_modeset_probe'
 # HBR
 printInfo "print dp rates"
 dmesg | grep 'intel_dp_print_rates'
+dmesg | grep 'drm:drm_dp_mst_update_slots'
+dmesg | grep 'drm:intel_dp_get_adjust_train'
 
 # DSC
 printInfo "DSC Info"
