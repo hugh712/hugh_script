@@ -4,6 +4,10 @@ function printInfo()
 {
     echo -e "======================== $1 ========================="
 }
+function printUrl()
+{
+    echo -e "== $1 =="
+}
 
 if [ "$EUID" -ne 0 ]
   then echo "Please run as root"
@@ -36,6 +40,7 @@ dmesg | grep 'drm_client_modeset_probe'
 
 # HBR
 printInfo "print dp rates"
+printUrl "https://en.wikipedia.org/wiki/DisplayPort#Main_specifications"
 dmesg | grep 'intel_dp_print_rates'
 dmesg | grep 'drm:drm_dp_mst_update_slots'
 dmesg | grep 'drm:intel_dp_get_adjust_train'
