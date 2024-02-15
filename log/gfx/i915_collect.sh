@@ -56,8 +56,9 @@ cat /sys/kernel/debug/dri/0/i915_edp_psr_status
 dmesg | grep -i 'psr'
 
 # Color Depth
-printInfo "Color Depth"
+printInfo "Color Depth & Refresh Rate Range"
 dmesg | grep 'color depth'
+dmesg | grep -i 'drm:update_display_info' | grep -i 'Refresh rate range'
 
 
 # HDMI
