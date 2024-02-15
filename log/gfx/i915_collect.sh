@@ -48,6 +48,11 @@ printInfo "PSR Info"
 cat /sys/kernel/debug/dri/0/i915_edp_psr_status
 dmesg | grep -i 'psr'
 
+# Color Depth
+printInfo "Color Depth"
+dmesg | grep 'color depth'
+
+
 # HDMI
 printInfo "Parse cea_ext and HDMI"
 dmesg | grep -i 'drm_parse'
