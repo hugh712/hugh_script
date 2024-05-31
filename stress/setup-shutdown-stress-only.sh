@@ -57,7 +57,7 @@ if [ ! "$count" -gt 0 ]; then
         #Show Report and exit
 
         output_message="Finished stress $count_total times"
-        zenity --info --text="$output_message" --title="Info"
+        #zenity --info --text="$output_message" --title="Info"
         sudo systemctl disable shutdown_stress.service
         sudo systemctl stop shutdown_stress.service
         exit 0
@@ -69,7 +69,7 @@ fi
 count=$((count - 1))
 echo $count > $count_file
 
-zenity --info --text="$output_message" --title="Info"&
+#zenity --info --text="$output_message" --title="Info"&
 sleep 10
 
 sudo rtcwake --mode off -s "$STRESS_BOOT_WAKEUP_DELAY"
