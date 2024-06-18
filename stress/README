@@ -1,0 +1,9 @@
+# How to setup the enviroment
+$ ./setup-reboot-stress-mipi.sh
+$ sudo systemctl start shutdown_stress
+
+# How to set the reboot count
+echo 10 > ~/.stress_config/count_reboot
+
+# How to change the error message in dmesg you would like to monitor
+#     chane THE_ERR varialbe in the script
