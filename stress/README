@@ -10,3 +10,7 @@ $ echo 10 > ~/.stress_config/count_reboot
 
 # How to know how many time the issue happened?
 $ cat ~/.stress_config/count_error
+
+# How to change reboot to shutdown stress
+#    Just comment the line of reboot and 
+#    uncomment the line of rtcwake 
