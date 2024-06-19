@@ -6,9 +6,10 @@ $ sudo systemctl start shutdown_stress
 $ echo 10 > ~/.stress_config/count_reboot
 
 # How to change the error message in dmesg you would like to monitor
-#     chane THE_ERR varialbe in the script
+#     change THE_ERR varialbe in the script
 
 # How to know how many time the issue happened?
+#    Currently the zenity is not working in 24.04, so please run below command instead:
 $ cat ~/.stress_config/count_error
 
 # How to change reboot to shutdown stress
