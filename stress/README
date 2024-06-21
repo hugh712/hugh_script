@@ -15,3 +15,8 @@ $ cat ~/.stress_config/count_error
 # How to change reboot to shutdown stress
 #    Just comment the line of reboot and 
 #    uncomment the line of rtcwake 
+
+# How to reset and re-run the test
+$ echo 100 > ~/.stress_config/count_reboot
+$ sudo systemctl enable shutdown_stress
+$ sudo systemctl start shutdown_stress
