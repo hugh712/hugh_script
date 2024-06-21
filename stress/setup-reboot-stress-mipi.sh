@@ -92,7 +92,7 @@ else
 fi
 
 count=$((count - 1))
-echo $count sudo $count_file
+echo $count > $count_file
 
 zenity --info --text="$output_message" --title="Info"&
 sleep 10
