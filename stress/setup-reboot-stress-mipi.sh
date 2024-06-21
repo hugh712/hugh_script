@@ -52,6 +52,7 @@ sudo bash -c "cat >/usr/bin/run_shutdown_stress" <<"EOF"
 count_file=~/.stress_config/count_reboot
 count_file_total=~/.stress_config/count_reboot_total
 count_file_error=~/.stress_config/count_error
+count_file_log=~/.stress_config/error_log
 count=$(cat $count_file)
 count_total=$(cat $count_file_total)
 count_error=$(cat $count_file_error)
@@ -65,6 +66,7 @@ STRESS_BOOT_WAKEUP_DELAY=60
 
 # device=$(ip a | grep "$target_device")
 err_m=$(sudo dmesg | grep "$THE_ERR")
+err_vsc=$(sudo dmesg | grep "vsc" | grep "failed")
 if [ ! "$count" -gt 0 ]; then
         #Show Report and exit
 
@@ -77,10 +79,12 @@ if [ ! "$count" -gt 0 ]; then
         sudo systemctl disable shutdown_stress.service
         sudo systemctl stop shutdown_stress.service
         exit 0
-elif [ -n "$err_m" ]; then
+elif [[ -n "$err_m" || -n "$err_vsc" ]]; then
         output_message="Err detected!"
         service_status=-1
         count_error=$((count_error + 1))
+	echo "$err_m" >> "$count_file_log"
+	echo "$err_vsc" >> "$count_file_log"
         echo $count_error > $count_file_error
 else
         output_message="shutdown stress ($count/$count_total), will shutdown soon "
@@ -88,7 +92,7 @@ else
 fi
 
 count=$((count - 1))
-echo $count > $count_file
+echo $count sudo $count_file
 
 zenity --info --text="$output_message" --title="Info"&
 sleep 10
