@@ -14,6 +14,8 @@ if [ ! -f "$IMG" ]; then
 fi
 
 folder=${IMG%"$suffix"};
+zipfile="$folder".zip
+checksumfile="$folder".sha256sum
 
 rm -rf "$folder"
 
@@ -22,3 +24,10 @@ rm -rf "$folder"
 cd "$folder" || exit
 
 zip -r ../"$folder".zip * .*
+cd ..
+
+sha256sum "$zipfile" > "$checksumfile"
+
+echo ""
+echo "The checksum of $zipfile is:"
+cat "$checksumfile"
