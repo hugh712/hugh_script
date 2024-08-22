@@ -74,6 +74,8 @@ device=$(ip a | grep "$target_device")
 err_m=$(sudo dmesg | grep "iwlwifi" | grep -i "failed")
 method=$(cat ~/.stress_config/method)
 
+export DISPLAY=:0
+
 if [ ! "$count" -gt 0 ]; then
         #Show Report and exit
 
