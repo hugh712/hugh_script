@@ -74,8 +74,6 @@ device=$(ip a | grep "$target_device")
 err_m=$(sudo dmesg | grep "iwlwifi" | grep -i "failed")
 method=$(cat ~/.stress_config/method)
 
-export DISPLAY=:0
-
 if [ ! "$count" -gt 0 ]; then
         #Show Report and exit
 
@@ -113,6 +111,8 @@ elif [ "$service_status" == -1 ]; then
 	notify-send "Warning" "$output_message"
 fi
 
+sleep 3
+
 if [ "$method" == "reboot" ]; then
 	sudo reboot
 else
@@ -121,6 +121,11 @@ fi
 
 
 EOF
+
+sudo cp bin/stop-stress /usr/bin/
+sudo cp bin/start-stress /usr/bin/
+sudo chmod 755 /usr/bin/stop-stress
+sudo chmod 755 /usr/bin/start-stress
 
 sudo chown $user:$user /usr/bin/run_shutdown_stress
 sudo chmod 700 /usr/bin/run_shutdown_stress

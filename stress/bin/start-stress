@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [ ! "$EUID" -ne 0 ]
+  then echo "Please do not run as root"
+  exit
+fi
+
+print_help()
+{
+    echo "usage: $0 -c reboot_count"
+    echo "eg: $0 -c 10"
+}
+
+
+# Handle commandline parameters
+while [ -n "$1" ]; do
+    case "$1" in
+        -c)
+            count=$2
+	    shift 2;;
+	* )
+            echo "Error: unknown option $1"
+	    print_help
+            exit 1
+            ;;
+
+    esac
+done
+
+if [ -z "$count" ]; then
+	count=50
+fi
+
+echo "$count" > ~/.stress_config/count_reboot
+echo "$count" > ~/.stress_config/count_reboot_total
+echo 0 > ~/.stress_config/count_error
+rm ~/.stress_config/error_log
+
+echo "Enable the service.."
+sudo systemctl enable shutdown_stress.service
+
+echo "Start the service.."
+sudo systemctl start shutdown_stress.service

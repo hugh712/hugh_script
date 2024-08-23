@@ -1,0 +1,29 @@
+#!/bin/bash
+
+print_help()
+{
+    echo "usage: $0 -d "
+    echo "-d: disalbe the service"
+}
+
+
+# Handle commandline parameters
+while [ -n "$1" ]; do
+    case "$1" in
+        -d)
+            disable=true
+	    shift 1;;
+	* )
+            echo "Error: unknown option $1"
+            exit 1
+            ;;
+    esac
+done
+
+if [ -n "$disable" ]; then
+	echo "Disable the service.."
+	sudo systemctl disable shutdown_stress.service
+fi
+
+echo "Stop the service.."
+sudo systemctl stop shutdown_stress.service
