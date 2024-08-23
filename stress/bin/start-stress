@@ -18,6 +18,12 @@ while [ -n "$1" ]; do
         -c)
             count=$2
 	    shift 2;;
+	-d)
+            device=$2
+	    shift 2;;
+	-m)
+            method=$2
+	    shift 2;;
 	* )
             echo "Error: unknown option $1"
 	    print_help
@@ -27,14 +33,36 @@ while [ -n "$1" ]; do
     esac
 done
 
+found=false
+methods="reboot shutdown"
+for x in $methods; do
+        if [ "$x" == "$method" ]; then
+                found=true
+        fi
+done
+
+if [ "$found" == false ]; then
+        echo "Can not find the method of - $method"
+        exit 1
+fi
+
+
 if [ -z "$count" ]; then
+	echo "Set $method time to $count"
 	count=50
 fi
 
 echo "$count" > ~/.stress_config/count_reboot
 echo "$count" > ~/.stress_config/count_reboot_total
 echo 0 > ~/.stress_config/count_error
-rm ~/.stress_config/error_log
+echo "$method" > ~/.stress_config/method
+echo "$device" > ~/.stress_config/target_device
+
+if [ -f ~/.stress_config/error_log ]; then
+	rm ~/.stress_config/error_log
+fi
+echo "set $method $count times"
+echo "target device is $device"
 
 echo "Enable the service.."
 sudo systemctl enable shutdown_stress.service
