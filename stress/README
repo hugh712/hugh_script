@@ -1,9 +1,14 @@
 # How to setup the enviroment
-$ ./setup-reboot-stress-mipi.sh
-$ sudo systemctl start shutdown_stress
+$ ./setup-stress.sh
 
-# How to set the reboot count
-$ echo 10 > ~/.stress_config/count_reboot
+# Start the service with reboot 50 times
+$ start-stress -d <your-internet-device> -c 50 -m reboot
+
+# Start the service with shutdown 50 times
+$ start-stress -d <your-internet-device> -c 50 -m shutdown
+
+# Start the service
+$ stop-stress
 
 # How to change the error message in dmesg you would like to monitor
 #     change THE_ERR varialbe in the script
@@ -11,12 +16,3 @@ $ echo 10 > ~/.stress_config/count_reboot
 # How to know how many time the issue happened?
 #    Currently the zenity is not working in 24.04, so please run below command instead:
 $ cat ~/.stress_config/count_error
-
-# How to change reboot to shutdown stress
-#    Just comment the line of reboot and 
-#    uncomment the line of rtcwake 
-
-# How to reset and re-run the test
-$ echo 100 > ~/.stress_config/count_reboot
-$ sudo systemctl enable shutdown_stress
-$ sudo systemctl start shutdown_stress
