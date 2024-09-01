@@ -24,7 +24,8 @@ fi
 echo "$STRESS_COUNT" >  ~/.stress_config/count_reboot
 echo "$STRESS_COUNT" >  ~/.stress_config/count_reboot_total
 echo "reboot" >  ~/.stress_config/method
-echo 0 >  ~/.stress_config/count_error
+echo 0 > ~/.stress_config/count_error
+echo 0 > ~/.stress_config/err_stop
 echo "$TARGET_DEVICE" > ~/.stress_config/target_device
 
 #setup systemd service 
@@ -59,9 +60,12 @@ count_file=~/.stress_config/count_reboot
 count_file_total=~/.stress_config/count_reboot_total
 count_file_error=~/.stress_config/count_error
 count_file_log=~/.stress_config/error_log
+err_stop_file=~/.stress_config/err_stop
 count=$(cat $count_file)
 count_total=$(cat $count_file_total)
 count_error=$(cat $count_file_error)
+err_stop=$(cat $err_stop_file)
+do_stop=0
 output_message=""
 #-1=detected
 #0 =do no
@@ -96,6 +100,10 @@ elif [[ -n "$err_m" || -z "$device" ]]; then
 		output_message="$output_message, \nCan not find $device "
 	fi
         echo $count_error > $count_file_error
+
+	if [ ! "$err_stop" == 1 ]; then
+		do_stop=1
+	fi
 else
         output_message="$method stress ($count/$count_total), will $method soon "
         service_status=1
@@ -112,6 +120,11 @@ elif [ "$service_status" == -1 ]; then
 fi
 
 sleep 3
+
+if [ "$do_stop" == 1 ]; then
+	exit 0
+fi
+
 
 if [ "$method" == "reboot" ]; then
 	sudo reboot

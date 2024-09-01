@@ -4,8 +4,9 @@ $ ./setup-stress.sh
 # Start the service with reboot 50 times
 $ start-stress -d <your-internet-device> -c 50 -m reboot
 
-# Start the service with shutdown 50 times
-$ start-stress -d <your-internet-device> -c 50 -m shutdown
+# Start the service with shutdown 50 times, stop the stress once any error happened
+$ start-stress -d <your-internet-device> -c 50 -m shutdown -s
+
 
 # Start the service
 $ stop-stress

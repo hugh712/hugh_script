@@ -7,8 +7,8 @@ fi
 
 print_help()
 {
-    echo "usage: $0 -c reboot_count"
-    echo "eg: $0 -c 10"
+    echo "usage: $0 -c <reboot_count> -d <device> -m <stress_method> -s"
+    echo "eg: $0 -c 10 -d eno1 -m reboot -s"
 }
 
 
@@ -24,6 +24,9 @@ while [ -n "$1" ]; do
 	-m)
             method=$2
 	    shift 2;;
+	-s)
+	    err_stop=1
+    	    shift 1;;	    
 	* )
             echo "Error: unknown option $1"
 	    print_help
@@ -61,6 +64,13 @@ echo "$device" > ~/.stress_config/target_device
 if [ -f ~/.stress_config/error_log ]; then
 	rm ~/.stress_config/error_log
 fi
+
+if [ "$err_stop" ]; then
+	echo 1 > ~/.stress_config/err_stop
+else
+	echo 0 > ~/.stress_config/err_stop
+fi
+
 echo "set $method $count times"
 echo "target device is $device"
 
