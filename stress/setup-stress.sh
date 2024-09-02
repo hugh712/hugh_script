@@ -75,7 +75,8 @@ target_device=$(cat ~/.stress_config/target_device)
 STRESS_BOOT_WAKEUP_DELAY=60
 
 device=$(ip a | grep "$target_device")
-err_m=$(sudo dmesg | grep "iwlwifi" | grep -i "failed")
+#err_m=$(sudo dmesg | grep "iwlwifi" | grep -i "failed")
+err_m=$(sudo dmesg | grep "Bluetooth" | grep -i "fail")
 method=$(cat ~/.stress_config/method)
 
 if [ ! "$count" -gt 0 ]; then
