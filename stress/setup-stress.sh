@@ -101,7 +101,7 @@ elif [[ -n "$err_m" || -z "$device" ]]; then
 	fi
         echo $count_error > $count_file_error
 
-	if [ ! "$err_stop" == 1 ]; then
+	if [ "$err_stop" == 1 ]; then
 		do_stop=1
 	fi
 else
