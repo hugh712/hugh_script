@@ -22,5 +22,6 @@ sudo ./bin/autologin.sh "$(whoami)"
 echo " $(whoami) ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/stress-test
 
 # Install packages
-sudo apt install zenity util-linux -y
+sudo apt install zenity util-linux stress -y
+sudo snap install fwts --beta
 

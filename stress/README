@@ -17,3 +17,10 @@ $ stop-stress
 # How to know how many time the issue happened?
 #    Currently the zenity is not working in 24.04, so please run below command instead:
 $ cat ~/.stress_config/count_error
+
+# Tool to run CPU/memory/IO/disk stress
+$ stress
+
+# Tool to run other power stress
+# eg. run s3 stress 90 times
+$ sudo fwts s3 --s3-multiple=90
