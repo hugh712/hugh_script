@@ -23,5 +23,5 @@ echo " $(whoami) ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/stress-t
 
 # Install packages
 sudo apt install zenity util-linux stress -y
-sudo snap install fwts --beta
+#sudo snap install fwts --beta
 
