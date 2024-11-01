@@ -23,7 +23,7 @@ rm -rf "$folder"
 
 cd "$folder" || exit
 
-zip -r ../"$folder".zip * .*
+zip -r ../"$folder".zip .
 cd ..
 
 sha256sum "$zipfile" > "$checksumfile"
