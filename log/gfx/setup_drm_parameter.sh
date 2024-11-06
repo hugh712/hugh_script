@@ -2,7 +2,7 @@
 
 set -e
 target_file=/etc/default/grub
-parameter="drm.debug=0xffff log_buf_len=32m"
+parameter="drm.debug=0xe log_buf_len=32m ignore_loglevel"
 
 echo "Writing kernel parameter to $target_file"
 sudo sed -i s/"GRUB_CMDLINE_LINUX=.*"/"GRUB_CMDLINE_LINUX=\"$parameter\""/g /etc/default/grub
