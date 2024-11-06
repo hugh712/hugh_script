@@ -47,7 +47,7 @@ dmesg | grep 'drm:intel_dp_get_adjust_train'
 
 # DSC
 printInfo "DSC Info"
-dmesg | grep 'drm:intel_dp_get_dsc_sink_cap [i915]]'
+dmesg | grep 'drm:intel_dp_get_dsc_sink_cap'
 find  /sys/kernel/debug/ -name i915_dsc_fec_support | xargs cat
 
 # PSR
