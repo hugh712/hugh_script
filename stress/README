@@ -2,13 +2,15 @@
 $ ./setup-stress.sh
 
 # Start the service with reboot 50 times
+# <your-internet-device>: eg. wlp2s0 you can find it by the command ``` ip a ```
+# ```-s```: stop the stress once any error happened
 $ start-stress -d <your-internet-device> -c 50 -m reboot
 
 # Start the service with shutdown 50 times, stop the stress once any error happened
 $ start-stress -d <your-internet-device> -c 50 -m shutdown -s
 
 
-# Start the service
+# Stop the service
 $ stop-stress
 
 # How to change the error message in dmesg you would like to monitor
@@ -24,3 +26,5 @@ $ stress
 # Tool to run other power stress
 # eg. run s3 stress 90 times
 $ sudo fwts s3 --s3-multiple=90
+
+# Find the log under the folder `~/.stress_config`
