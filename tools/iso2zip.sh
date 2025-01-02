@@ -5,7 +5,7 @@ suffix=".iso"
 pkg="zip p7zip-full"
 
 if ! dpkg -l $pkg> /dev/null 2>&1; then
-      sudo apt install $pkg -y;
+      sudo apt install "$pkg" -y;
 fi
 
 if [ ! -f "$IMG" ]; then
@@ -15,7 +15,7 @@ fi
 
 folder=${IMG%"$suffix"};
 zipfile="$folder".zip
-checksumfile="$folder".sha256sum
+checksumfile="$zipfile".sha256sum
 
 rm -rf "$folder"
 
