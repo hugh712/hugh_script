@@ -28,19 +28,20 @@ echo 0 > ~/.stress_config/count_error
 echo 0 > ~/.stress_config/err_stop
 echo "$TARGET_DEVICE" > ~/.stress_config/target_device
 
-# 確保錯誤紀錄檔案存在
+# ensure error record
 touch ~/.stress_config/error_log
 
-# 執行 hooks
+# execute hooks
 ./run_hooks.sh
 
-# 檢查 hook 是否有錯誤
+# check error
 count_error=$(cat ~/.stress_config/count_error)
 if [ "$count_error" -gt 0 ]; then
-    echo "Warning: Some hooks failed. Check ~/.stress_config/error_log for details."
+    echo -e "\033[0;31mError: Some hooks failed. Check ~/.stress_config/error_log for details.\033[0m"
+    exit 1
 fi
 
-# 設定 systemd 服務
+# set systemd service
 sudo bash -c "cat >/etc/systemd/system/shutdown_stress.service" <<"EOF"
 [Unit]
 Description=shutdown_stress service
