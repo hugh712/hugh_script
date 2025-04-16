@@ -12,18 +12,25 @@ if [ ! -f "$count_file_error" ]; then
     echo 0 > "$count_file_error"
 fi
 
-# clear failed count
+# clear previous error log
 > "$count_file_log"
 
 for script_file in hook/*; do
     echo "Running script: ${script_file}"
-    bash "$script_file"
 
-    if [[ "$?" == 0 ]]; then
+    output=$(bash "$script_file" 2>&1)
+    exit_code=$?
+
+    echo "$output"
+
+    if [[ "$exit_code" == 0 ]]; then
         success_hooks+=("$script_file")
     else
         error_msg="Error occurred while running ${script_file}"
         echo "$error_msg" | tee -a "$count_file_log"
+        echo "--- Output from ${script_file} ---" >> "$count_file_log"
+        echo "$output" >> "$count_file_log"
+        echo "" >> "$count_file_log"
 
         # add failed count
         count_error=$(cat "$count_file_error")
