@@ -1,145 +1,174 @@
 #!/bin/bash
 
-if [ ! "$EUID" -ne 0 ] 
-  then echo "Please do not run as root"
-  exit
+LOG_FILE="$HOME/setup-stress-full.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo "Starting setup..."
+
+if [ "$EUID" -eq 0 ]; then
+  echo "Please do not run as root"
+  exit 1
 fi
 
-# Set up environment
 chmod +x ./bin/*
 ./bin/env-setup.sh
 if [ $? -ne 0 ]; then
-        echo '\033[0;31mError: ENV setup failed\033[0m'
-        exit 1
+    echo -e '\033[0;31mError: ENV setup failed\033[0m'
+    exit 1
 fi
 
 user=$(whoami)
 STRESS_COUNT=50
 TARGET_DEVICE=enx6018956e2b29
+STOP_ON_ERROR=1
 
-if [ ! -d ~/.stress_config ]; then
-        mkdir ~/.stress_config
+mkdir -p ~/.stress_config
+echo "$STRESS_COUNT" > ~/.stress_config/count_reboot
+echo "$STRESS_COUNT" > ~/.stress_config/count_reboot_total
+echo "reboot" > ~/.stress_config/method
+echo "$STOP_ON_ERROR" > ~/.stress_config/err_stop
+echo 0 > ~/.stress_config/count_error
+echo "$TARGET_DEVICE" > ~/.stress_config/target_device
+touch ~/.stress_config/error_log
+
+# Run pre-check hooks before setting service
+echo "[INFO] Running pre-check error_hooks"
+hook_failed=0
+
+for hook in "$HOME/hugh_script/stress/error_hooks/"*.sh; do
+    echo "[HOOK] Executing $hook"
+    bash "$hook"
+    result=$?
+    if [ $result -ne 0 ]; then
+        echo "[HOOK FAIL] $hook failed" | tee -a "$HOME/.stress_config/error_log"
+        hook_failed=1
+    fi
+done
+
+if [ "$hook_failed" -ne 0 ]; then
+    echo -e "\033[0;31m[ERROR] One or more hooks failed. Setup aborted.\033[0m"
+    exit 1
 fi
 
-echo "$STRESS_COUNT" >  ~/.stress_config/count_reboot
-echo "$STRESS_COUNT" >  ~/.stress_config/count_reboot_total
-echo "reboot" >  ~/.stress_config/method
-echo 0 > ~/.stress_config/count_error
-echo 0 > ~/.stress_config/err_stop
-echo "$TARGET_DEVICE" > ~/.stress_config/target_device
-
-#setup systemd service 
-sudo bash -c "cat >/etc/systemd/system/shutdown_stress.service" <<"EOF"
+# Define shutdown_stress systemd service
+sudo tee /etc/systemd/system/shutdown_stress.service > /dev/null <<EOF
 [Unit]
 Description=shutdown_stress service
-#After=network.target
-After=plymouth-quit-wait.service
-StartLimitIntervalSec=10
+After=network.target
 
 [Service]
 Type=simple
 Restart=on-failure
-#After=network-online.target
-RestartSec=15
-Environment=DISPLAY=:0
-Environment="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus"
-User=THE_USER
-ExecStart=/usr/bin/bash /usr/bin/run_shutdown_stress
-                                                                                                                                                                                              
+RestartSec=10
+User=$user
+ExecStart=/usr/bin/run_shutdown_stress
+
 [Install]
 WantedBy=multi-user.target
-
 EOF
-sudo sed -i s/"User=THE_USER"/"User=$user"/g /etc/systemd/system/shutdown_stress.service
+
 sudo systemctl enable shutdown_stress.service
 
-#setup runtime script
-sudo bash -c "cat >/usr/bin/run_shutdown_stress" <<"EOF"
+# Define /usr/bin/run_shutdown_stress
+sudo tee /usr/bin/run_shutdown_stress > /dev/null <<'EOF'
 #!/bin/bash
-count_file=~/.stress_config/count_reboot
-count_file_total=~/.stress_config/count_reboot_total
-count_file_error=~/.stress_config/count_error
-count_file_log=~/.stress_config/error_log
-err_stop_file=~/.stress_config/err_stop
-count=$(cat $count_file)
-count_total=$(cat $count_file_total)
-count_error=$(cat $count_file_error)
-err_stop=$(cat $err_stop_file)
-do_stop=0
-output_message=""
-#-1=detected
-#0 =do no
-#1 =shutown
-service_status=0 # 0=do nothing, 
-target_device=$(cat ~/.stress_config/target_device)
+
+count_file="$HOME/.stress_config/count_reboot"
+count_file_total="$HOME/.stress_config/count_reboot_total"
+count_file_error="$HOME/.stress_config/count_error"
+count_file_log="$HOME/.stress_config/error_log"
+err_stop=$(cat "$HOME/.stress_config/err_stop")
+target_device=$(cat "$HOME/.stress_config/target_device")
+method=$(cat "$HOME/.stress_config/method")
 STRESS_BOOT_WAKEUP_DELAY=60
 
-device=$(ip a | grep "$target_device")
-#err_m=$(sudo dmesg | grep "iwlwifi" | grep -i "failed")
-err_m=$(sudo dmesg | grep "Bluetooth" | grep -i "fail")
-method=$(cat ~/.stress_config/method)
+count=$(cat "$count_file")
+count_total=$(cat "$count_file_total")
+count_error=$(cat "$count_file_error")
+do_stop=0
+output_message=""
+service_status=0
 
-if [ ! "$count" -gt 0 ]; then
-        #Show Report and exit
+# Run hooks to validate after stress
+hook_failed=0
+for hook in "$HOME/hugh_script/stress/error_hooks/"*.sh; do
+    echo "[HOOK] Executing $hook"
+    bash "$hook"
+    result=$?
+    if [ $result -ne 0 ]; then
+        echo "[HOOK FAIL] $hook" >> "$count_file_log"
+        hook_failed=1
+    fi
+done
 
-        if [[ -n "$err_m" || -z "$device" ]]; then
-                count_error=$((count_error + 1))
-                echo $count_error > $count_file_error
-        fi
-        output_message="Finished stress $count_total times, detected $count_error times"
-	notify-send "Info" "$output_message"
+if [ "$hook_failed" -ne 0 ]; then
+    echo "[FAIL] Detected failure in hooks"
+    count_error=$((count_error + 1))
+    echo "$count_error" > "$count_file_error"
+
+    if [ "$err_stop" == "1" ]; then
+        echo "[STOP] err_stop=1, stopping stress service"
+        notify-send "HOOK FAILED" "Stopping test due to hook failure"
         sudo systemctl disable shutdown_stress.service
         sudo systemctl stop shutdown_stress.service
-        exit 0
-elif [[ -n "$err_m" || -z "$device" ]]; then
-        service_status=-1
-        count_error=$((count_error + 1))
-	output_message="Err detected! $err_m \n "
-	echo "$err_m" >> "$count_file_log"
-	if [ -z "$device" ]; then
-		echo "Can not find $device" >> "$count_file_log"
-		output_message="$output_message, \nCan not find $device "
-	fi
-        echo $count_error > $count_file_error
-
-	if [ "$err_stop" == 1 ]; then
-		do_stop=1
-	fi
-else
-        output_message="$method stress ($count/$count_total), will $method soon "
-        service_status=1
+        exit 1
+    fi
 fi
+
+# Continue stress logic
+if [ "$count" -le 0 ]; then
+    notify-send "Stress Test Done" "Total: $count_total, Errors: $count_error"
+    sudo systemctl disable shutdown_stress.service
+    sudo systemctl stop shutdown_stress.service
+    exit 0
+fi
+
+output_message="$method stress ($count/$count_total)"
+echo "[INFO] $output_message"
+notify-send "Info" "$output_message"
 
 count=$((count - 1))
-echo $count > $count_file
-
-if [ "$service_status" == 1 ]; then
-	notify-send "Info" "$output_message"
-        sleep 10
-elif [ "$service_status" == -1 ]; then
-	notify-send "Warning" "$output_message"
-fi
-
+echo "$count" > "$count_file"
 sleep 3
 
-if [ "$do_stop" == 1 ]; then
-	exit 0
-fi
-
-
+# Action
 if [ "$method" == "reboot" ]; then
-	sudo reboot
+    sudo reboot
 else
-	sudo rtcwake --mode off -s "$STRESS_BOOT_WAKEUP_DELAY"
+    sudo rtcwake --mode off -s "$STRESS_BOOT_WAKEUP_DELAY"
 fi
-
-
 EOF
 
-sudo cp bin/stop-stress /usr/bin/
-sudo cp bin/start-stress /usr/bin/
-sudo chmod 755 /usr/bin/stop-stress
-sudo chmod 755 /usr/bin/start-stress
-
-sudo chown $user:$user /usr/bin/run_shutdown_stress
 sudo chmod 700 /usr/bin/run_shutdown_stress
+sudo chown "$user:$user" /usr/bin/run_shutdown_stress
+
+# Provide stop-stress command
+sudo tee /usr/bin/stop-stress > /dev/null <<'EOF'
+#!/bin/bash
+
+NORMAL_STOP_FILE="$HOME/.stress_config/count_reboot"
+EMERGENCY_FLAG="/tmp/stop_stress_testing"
+SERVICE_NAME="shutdown_stress.service"
+
+function normal_stop() {
+    echo "[STOP] Setting reboot count to 0"
+    echo 0 > "$NORMAL_STOP_FILE"
+    notify-send "STOP" "Stress test will stop after this cycle."
+}
+
+function emergency_stop() {
+    echo "[STOP NOW] Writing emergency stop flag: $EMERGENCY_FLAG"
+    touch "$EMERGENCY_FLAG"
+    sudo systemctl disable "$SERVICE_NAME"
+    sudo systemctl stop "$SERVICE_NAME"
+    notify-send "STOP" "Stress test forcefully terminated!"
+}
+
+if [[ "$1" == "now" ]]; then
+    emergency_stop
+else
+    normal_stop
+fi
+EOF
+
+sudo chmod +x /usr/bin/stop-stress
