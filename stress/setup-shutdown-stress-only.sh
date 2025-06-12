@@ -18,7 +18,7 @@ echo "$STRESS_COUNT" >  ~/.stress_config/count_reboot_total
 echo 0 >  ~/.stress_config/count_error
 echo "shutdown" > ~/.stress_config/method
 echo "$user" > ~/.stress_config/owner
-echo 1 > ~/.stress_config/err_stop
+echo 0 > ~/.stress_config/err_stop
 
 # Run error_hooks before setting up the service
 echo "[INFO] Running error_hooks before setting up shutdown stress..."
