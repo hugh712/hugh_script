@@ -8,8 +8,9 @@ fi
 # Set up environment
 chmod +x ./bin/*
 ./bin/env-setup.sh
-if [ $? -ne 0 ]; then
-		echo '\033[0;31mError: ENV setup failed\033[0m'
+return_code=$?
+if [  "$return_code" -ne 0 ]; then
+		printf '\033[0;31mError: ENV setup failed\033[0m'
 		exit 1
 fi
 
@@ -150,5 +151,5 @@ sudo cp bin/start-stress /usr/bin/
 sudo chmod 755 /usr/bin/stop-stress
 sudo chmod 755 /usr/bin/start-stress
 
-sudo chown $user:$user /usr/bin/run_shutdown_stress
+sudo chown "$user":"$user" /usr/bin/run_shutdown_stress
 sudo chmod 700 /usr/bin/run_shutdown_stress
