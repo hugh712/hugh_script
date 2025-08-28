@@ -87,6 +87,8 @@ STRESS_BOOT_WAKEUP_DELAY=60
 echo "" > $current_error
 echo "" > $log_file
 
+logger "========stress-cycle-$count/$count_total========="
+
 for file in "$stress_hooks"/*.sh; do
 	bash $file
 	
