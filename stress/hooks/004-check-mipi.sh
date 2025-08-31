@@ -14,9 +14,9 @@ count_error=$(cat $count_file)
 
 err_m=$(sudo dmesg | grep -e "vsc.*failed.*" -e "switch camera to host failed")
 
-if [ -n "$err_m "]; then
+if [ -n "$err_m" ]; then
 	count_error=$((count_error + 1))
-  echo $count_error > $count_file
+    echo $count_error > $count_file
 	echo "Detect Mipi Camera error message - $err_m" >> "$current_error"
 	exit -1
 fi

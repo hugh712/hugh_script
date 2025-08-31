@@ -14,7 +14,7 @@ count_error=$(cat $count_file)
 
 err_m=$(sudo dmesg | grep "Bluetooth" | grep -i "fail")
 
-if [ -n "$err_m "]; then
+if [ -n "$err_m" ]; then
 	count_error=$((count_error + 1))
   echo $count_error > $count_file
 	echo "Detect Bluetooth error message - $err_m" >> "$current_error"
