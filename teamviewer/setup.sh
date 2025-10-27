@@ -1,7 +1,7 @@
 #!/bin/bash
 
 EULA_COUNT=20
-# Set to teamview-host for hestless
+# Set to teamview-host for headless
 headless="-host"
 
 function ping_google()
@@ -72,13 +72,13 @@ else
 fi
 set -e
 if ! dpkg -s teamviewer"$headless" >/dev/null 2>&1; then
-  printInfo "📦 No detect teamviewer"$headless"，Start to install..."
+  printInfo "📦 No detect teamviewer$headless，Start to install..."
   sudo apt update -y
   sudo apt install -y wget gdebi-core makepasswd
-  wget -O /tmp/teamviewer.deb "https://download.teamviewer.com/download/linux/teamviewer"$headless"_$arc.deb"
+  wget -O /tmp/teamviewer.deb "https://download.teamviewer.com/download/linux/teamviewer$headless_$arc.deb"
   sudo gdebi -n /tmp/teamviewer.deb || sudo apt -f install -y
 else
-  printInfo "✅ Teamviewer"$headless" Installed"
+  printInfo "✅ Teamviewer$headless Installed"
 fi
 set +e
 
