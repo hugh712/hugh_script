@@ -75,7 +75,9 @@ if ! dpkg -s teamviewer"$headless" >/dev/null 2>&1; then
   printInfo "📦 No detect teamviewer$headless，Start to install..."
   sudo apt update -y
   sudo apt install -y wget gdebi-core makepasswd
-  wget -O /tmp/teamviewer.deb "https://download.teamviewer.com/download/linux/teamviewer$headless_$arc.deb"
+  header="https://download.teamviewer.com/download/linux/teamviewer"
+  suffix=".deb"
+  wget -O /tmp/teamviewer.deb "$header""$headless"_"$arc""$suffix"
   sudo gdebi -n /tmp/teamviewer.deb || sudo apt -f install -y
 else
   printInfo "✅ Teamviewer$headless Installed"
