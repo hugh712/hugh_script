@@ -44,11 +44,6 @@ while [ -n "$1" ]; do
     esac                                                                                                                                                      
     shift
 done
-printInfo "🌐 Checking Internet Connection"
-if [ "$(ping_google)" != "0" ]; then
-    printError "Please check your internet status"
-    exit 1
-fi
 
 printInfo "🔧 TeamViewer Host auto setup"
 
