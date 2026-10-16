@@ -9,6 +9,10 @@ exec 2> >(while IFS= read -r line; do
 done)
 
 SUPPORT_USER="hugh"
+SERVICE_NAME="ngrok-ssh"
+
+RUN_USER="$(id -un)"
+RUN_HOME="$HOME"
 
 usage() {
     echo "Usage:"
@@ -104,21 +108,21 @@ echo
 # ------------------------------------------------------------
 # Update package list
 # ------------------------------------------------------------
-echo "[1/8] Updating apt package list..."
+echo "[1/9] Updating apt package list..."
 sudo apt update
 
 # ------------------------------------------------------------
 # Install required packages
 # ------------------------------------------------------------
 echo
-echo "[2/8] Installing SSH, tmux, curl and openssl..."
+echo "[2/9] Installing SSH, tmux, curl and openssl..."
 sudo apt install -y openssh-server tmux curl openssl
 
 # ------------------------------------------------------------
 # Install ngrok only if missing
 # ------------------------------------------------------------
 echo
-echo "[3/8] Checking ngrok..."
+echo "[3/9] Checking ngrok..."
 
 if command -v ngrok >/dev/null 2>&1; then
     echo "ngrok is already installed."
@@ -128,11 +132,21 @@ else
     sudo snap install ngrok
 fi
 
+NGROK_BIN="$(command -v ngrok)"
+
+if [ -z "$NGROK_BIN" ]; then
+    echo "ngrok command not found after installation." >&2
+    exit 1
+fi
+
+echo "ngrok binary:"
+echo "  $NGROK_BIN"
+
 # ------------------------------------------------------------
 # Enable SSH server
 # ------------------------------------------------------------
 echo
-echo "[4/8] Enabling SSH service..."
+echo "[4/9] Enabling SSH service..."
 
 sudo systemctl enable --now ssh
 
@@ -147,7 +161,7 @@ fi
 # Create support user
 # ------------------------------------------------------------
 echo
-echo "[5/8] Preparing support user: $SUPPORT_USER"
+echo "[5/9] Preparing support user: $SUPPORT_USER"
 
 if id "$SUPPORT_USER" >/dev/null 2>&1; then
     echo "User '$SUPPORT_USER' already exists."
@@ -161,14 +175,13 @@ else
     echo "User '$SUPPORT_USER' created."
 fi
 
-# Add user to sudo group
 sudo usermod -aG sudo "$SUPPORT_USER"
 
 # ------------------------------------------------------------
 # Configure NOPASSWD sudo
 # ------------------------------------------------------------
 echo
-echo "[6/8] Enabling passwordless sudo for '$SUPPORT_USER'..."
+echo "[6/9] Enabling passwordless sudo for '$SUPPORT_USER'..."
 
 sudo tee "/etc/sudoers.d/$SUPPORT_USER" >/dev/null <<EOF
 $SUPPORT_USER ALL=(ALL) NOPASSWD:ALL
@@ -176,7 +189,6 @@ EOF
 
 sudo chmod 440 "/etc/sudoers.d/$SUPPORT_USER"
 
-# Validate sudo configuration
 if sudo visudo -cf "/etc/sudoers.d/$SUPPORT_USER" >/dev/null; then
     echo "sudoers configuration is valid."
 else
@@ -188,11 +200,13 @@ fi
 # ------------------------------------------------------------
 # Import Launchpad SSH keys
 # ------------------------------------------------------------
+echo
+
 if [ -n "$launchpad_id" ]; then
 
-    echo
-    echo "[7/8] Importing SSH public keys from Launchpad..."
-    echo "Launchpad account: $launchpad_id"
+    echo "[7/9] Importing SSH public keys from Launchpad..."
+    echo "Launchpad account:"
+    echo "  $launchpad_id"
 
     launchpad_keys_url="https://launchpad.net/~${launchpad_id}/+sshkeys"
 
@@ -206,6 +220,7 @@ if [ -n "$launchpad_id" ]; then
     sudo mkdir -p "/home/$SUPPORT_USER/.ssh"
     sudo touch "/home/$SUPPORT_USER/.ssh/authorized_keys"
 
+    # Remove keys imported by a previous run
     sudo sed -i \
         '/# BEGIN NGROK_REMOTE_SUPPORT_LAUNCHPAD_KEYS/,/# END NGROK_REMOTE_SUPPORT_LAUNCHPAD_KEYS/d' \
         "/home/$SUPPORT_USER/.ssh/authorized_keys"
@@ -214,9 +229,11 @@ if [ -n "$launchpad_id" ]; then
         echo "# BEGIN NGROK_REMOTE_SUPPORT_LAUNCHPAD_KEYS"
         echo "$keys"
         echo "# END NGROK_REMOTE_SUPPORT_LAUNCHPAD_KEYS"
-    } | sudo tee -a "/home/$SUPPORT_USER/.ssh/authorized_keys" >/dev/null
+    } | sudo tee -a \
+        "/home/$SUPPORT_USER/.ssh/authorized_keys" >/dev/null
 
-    sudo chown -R "$SUPPORT_USER:$SUPPORT_USER" \
+    sudo chown -R \
+        "$SUPPORT_USER:$SUPPORT_USER" \
         "/home/$SUPPORT_USER/.ssh"
 
     sudo chmod 700 \
@@ -229,8 +246,7 @@ if [ -n "$launchpad_id" ]; then
 
 else
 
-    echo
-    echo "[7/8] No Launchpad account specified."
+    echo "[7/9] No Launchpad account specified."
     echo "Skipping SSH public key import."
 
 fi
@@ -239,10 +255,71 @@ fi
 # Configure ngrok token
 # ------------------------------------------------------------
 echo
-echo "[8/8] Configuring ngrok..."
+echo "[8/9] Configuring ngrok..."
 
 ngrok config add-authtoken "$token"
 
+# ------------------------------------------------------------
+# Create systemd service
+# ------------------------------------------------------------
+echo
+echo "[9/9] Creating ngrok systemd service..."
+
+if [ -n "$ngrok_url" ]; then
+    NGROK_EXEC="$NGROK_BIN tcp --url=$ngrok_url 22"
+else
+    NGROK_EXEC="$NGROK_BIN tcp 22"
+fi
+
+sudo tee "/etc/systemd/system/${SERVICE_NAME}.service" >/dev/null <<EOF
+[Unit]
+Description=ngrok SSH Tunnel
+After=network-online.target ssh.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=$RUN_USER
+Environment=HOME=$RUN_HOME
+WorkingDirectory=$RUN_HOME
+
+ExecStart=$NGROK_EXEC
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "Reloading systemd..."
+sudo systemctl daemon-reload
+
+echo "Enabling $SERVICE_NAME.service..."
+sudo systemctl enable "$SERVICE_NAME.service"
+
+echo "Starting $SERVICE_NAME.service..."
+sudo systemctl restart "$SERVICE_NAME.service"
+
+sleep 2
+
+# ------------------------------------------------------------
+# Check service
+# ------------------------------------------------------------
+if systemctl is-active --quiet "$SERVICE_NAME.service"; then
+    echo
+    echo "ngrok service is running."
+else
+    echo
+    echo "ngrok service failed to start." >&2
+    echo
+    sudo systemctl status "$SERVICE_NAME.service" --no-pager
+    exit 1
+fi
+
+# ------------------------------------------------------------
+# Summary
+# ------------------------------------------------------------
 echo
 echo "=========================================="
 echo " Remote Support Ready"
@@ -254,29 +331,40 @@ echo
 echo "sudo:"
 echo "  NOPASSWD enabled"
 echo
+echo "ngrok service:"
+echo "  $SERVICE_NAME.service"
+echo
+echo "ngrok command:"
+echo "  $NGROK_EXEC"
+echo
 
 if [ -n "$launchpad_id" ]; then
-    echo "Launchpad SSH key:"
+    echo "Launchpad account:"
     echo "  $launchpad_id"
     echo
 fi
 
-echo "Starting ngrok TCP tunnel..."
-echo
-
-# ------------------------------------------------------------
-# Start ngrok
-# ------------------------------------------------------------
 if [ -n "$ngrok_url" ]; then
-
-    echo "ngrok URL:"
+    echo "Configured ngrok endpoint:"
     echo "  $ngrok_url"
     echo
-
-    ngrok tcp --url="$ngrok_url" 22
-
-else
-
-    ngrok tcp 22
-
 fi
+
+echo "Useful commands:"
+echo
+echo "  Check status:"
+echo "    systemctl status $SERVICE_NAME"
+echo
+echo "  Watch ngrok log:"
+echo "    journalctl -u $SERVICE_NAME -f"
+echo
+echo "  Restart tunnel:"
+echo "    sudo systemctl restart $SERVICE_NAME"
+echo
+echo "  Stop tunnel:"
+echo "    sudo systemctl stop $SERVICE_NAME"
+echo
+echo "  Disable auto-start:"
+echo "    sudo systemctl disable $SERVICE_NAME"
+echo
+echo "=========================================="
